@@ -1,11 +1,12 @@
-#include "L1Cache.h"
+#include "L2Cache.h"
 
 int main() {
 
   uint32_t value1, value2, clock;
 
   resetTime();
-  initCache();
+  initL1Cache();
+  initL2Cache();
   value1 = -1;
   value2 = 0;
 
