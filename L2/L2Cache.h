@@ -24,18 +24,18 @@ void accessL2(uint32_t, uint8_t *, uint32_t);
 typedef struct CacheLine {
   uint8_t Valid;
   uint8_t Dirty;
-  uint8_t Index;
+  uint16_t Index;
   uint32_t Tag;
 } CacheLine;
 
 typedef struct L1Cache {
   uint32_t init;
-  CacheLine lines[256*sizeof(CacheLine)];
+  CacheLine lines[256];
 } L1Cache;
 
 typedef struct L2Cache {
   uint32_t init;
-  CacheLine lines[512*sizeof(CacheLine)];
+  CacheLine lines[512];
 } L2Cache;
 
 /*********************** Interfaces *************************/
