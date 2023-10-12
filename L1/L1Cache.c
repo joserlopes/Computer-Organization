@@ -7,7 +7,7 @@ uint8_t L1Cache[L1_SIZE];
 uint8_t L2Cache[L2_SIZE];
 uint8_t DRAM[DRAM_SIZE];
 uint32_t time;
-Cache L1Cache;
+Cache SimpleL1Cache;
 
 /**************** Time Manipulation ***************/
 void resetTime() { time = 0; }
@@ -33,7 +33,7 @@ void accessDRAM(uint32_t address, uint8_t *data, uint32_t mode) {
 
 /*********************** L1 cache *************************/
 
-void initCache() { L1Cache.init = 0; }
+void initCache() { SimpleL1Cache.init = 0; }
 
 void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
 
@@ -41,10 +41,10 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
   uint8_t TempBlock[BLOCK_SIZE];
 
   /* init cache */
-  if (L1Cache.init == 0) {
+  if (SimpleL1Cache.init == 0) {
     for (int i = 0; i < 256; i++)
-        L1Cache.lines[i].Valid = 0;
-    L1Cache.init = 1;
+        SimpleL1Cache.lines[i].Valid = 0;
+    SimpleL1Cache.init = 1;
   }
 
   Tag = address >> 14; // shift right 14 times to remove offset and index
@@ -55,7 +55,7 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
   MemAddress = address >> 6; // address of the block in memory
   MemAddress = MemAddress << 6; // address of the block in memory
 
-  CacheLine *Line = &L1Cache.lines[index]; //E preciso passar o index para decimal (esta em binario)
+  CacheLine *Line = &SimpleL1Cache.lines[index];
 
   /* access Cache*/
 
