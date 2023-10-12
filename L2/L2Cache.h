@@ -16,8 +16,7 @@ void accessDRAM(uint32_t, uint8_t *, uint32_t);
 
 /*********************** Cache *************************/
 
-void initL1Cache();
-void initL2Cache();
+void initCache();
 void accessL1(uint32_t, uint8_t *, uint32_t);
 void accessL2(uint32_t, uint8_t *, uint32_t);
 

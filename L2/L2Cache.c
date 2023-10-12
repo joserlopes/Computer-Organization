@@ -1,5 +1,20 @@
-/* L1 bits - tag-18bits/index-8bits/offset-6bits */
-/* L2 bits - tag-17bits/index-9bits/offset-6bits*/
+// Computer organization course simple L2 Cache emulator
+
+/* Made by:
+ *
+ * João Rocha - ist103465
+ * João Fidalgo - ist103471
+ * José Lopes - ist103938
+ *
+ */
+
+/* Cache address organization
+ *
+ * L1 - tag-18bits/index-8bits/offset-6bits
+ * L2 - tag-17bits/index-9bits/offset-6bits
+ *
+ */
+
 #include "L2Cache.h"
 #include "Cache.h"
 
@@ -11,10 +26,10 @@ L1Cache SimpleL1Cache;
 L2Cache SimpleL2Cache;
 
 /**************** Initialization ***************/
-void initCache() { 
+void initCache() {
   SimpleL1Cache.init = 0;
-  SimpleL2Cache.init = 0; 
-  }
+  SimpleL2Cache.init = 0;
+}
 
 /**************** Time Manipulation ***************/
 void resetTime() { time = 0; }
@@ -53,10 +68,10 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
 
 
   Tag = address >> 14; // shift right 14 times to remove offset and index
-  index = address << 18;
-  index = index >> 24;
-  offset = address << 26;
-  offset = offset >> 26;
+  index = address << 18; // shift left 18 times to remove tag
+  index = index >> 24; // shift right 24 times to remove offset and put all the index bits on the right
+  offset = address << 26; // shift left 26 times to remove index and tag
+  offset = offset >> 26; // shift right 26 times to put all the offset bits on the right
 
   CacheLine *Line = &SimpleL1Cache.lines[index];
 
@@ -103,12 +118,13 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode) {
   }
 
   Tag = address >> 15; // shift right 15 times to remove offset and index
-  index = address << 17;
-  index = index >> 23;
-  offset = address << 26;
-  offset = offset >> 26;
-  MemAddress = address >> 6;
+  index = address << 17; // shift left 17 times to remove tag
+  index = index >> 23; // shift right 23 times to remove offset and put all the index bits on the right
+  offset = address << 26; // shift left 26 times to remove index and tag
+  offset = offset >> 26; // shift right 26 times to put all the offset bits on the right
+  MemAddress = address >> 6; // shift right 6 times to remove offset
   MemAddress = MemAddress << 6; // address of the block in memory
+
   CacheLine *Line = &SimpleL2Cache.lines[index];
 
   /* access Cache*/

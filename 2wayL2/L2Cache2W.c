@@ -1,5 +1,20 @@
-/* L1 bits - tag-18bits/index-8bits/offset-6bits */
-/* L2 bits - tag-18bits/index-8bits/offset-4+2bits*/
+// Computer organization course 2 way associative L2 Cache emulator
+
+/* Made by:
+ *
+ * João Rocha - ist103465
+ * João Fidalgo - ist103471
+ * José Lopes - ist103938
+ *
+ */
+
+/* Cache address organization
+ *
+ * L1  - tag-18bits/index-8bits/offset-6bits
+ * L2  - tag-18bits/index-8bits/offset-4+2bits
+ *
+ */
+
 #include "L2Cache2W.h"
 #include "Cache.h"
 
@@ -11,10 +26,10 @@ L1Cache SimpleL1Cache;
 L2Cache SimpleL2Cache;
 
 /**************** Initialization ***************/
-void initCache() { 
+void initCache() {
 	SimpleL1Cache.init = 0;
-	SimpleL2Cache.init = 0; 
-	}
+	SimpleL2Cache.init = 0;
+}
 
 /**************** Time Manipulation ***************/
 void resetTime() { time = 0; }
@@ -53,12 +68,11 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
 		SimpleL1Cache.init = 1;
 	}
 
-
 	Tag = address >> 14; // shift right 14 times to remove offset and index
-	index = address << 18; // shift left 18 times to remove offset
-	index = index >> 24; // shift right 24 times to remove offset
-	offset = address << 26;	// shift left 26 times to remove index
-	offset = offset >> 26;	// shift right 26 times to remove index
+	index = address << 18; // shift left 18 times to remove tag
+	index = index >> 24; // shift right 24 times to remove offset and put all the index bits on the right
+	offset = address << 26;	// shift left 26 times to remove index and tag
+	offset = offset >> 26;	// shift right 26 times to put all the offset bits on the right
 
 	CacheLine *Line = &SimpleL1Cache.lines[index];
 
@@ -97,31 +111,30 @@ void initL2Cache() { SimpleL2Cache.init = 0; }
 
 void accessL2(uint32_t address, uint8_t *data, uint32_t mode) {
 
-	int aux;
 	uint32_t index, Tag, MemAddress, offset;
-	uint8_t TempBlock[BLOCK_SIZE], oldest;
+	uint8_t TempBlock[BLOCK_SIZE], oldest, aux;
 
 	/* init cache */
 	if (SimpleL2Cache.init == 0) {
 		for (int i = 0; i < 256; i++){
 				SimpleL2Cache.sets[i].oldest = 0;
-				for(int j = 0; j < 2; j++) 
+				for(int j = 0; j < 2; j++)
 					SimpleL2Cache.sets[i].blocks[j].Valid = 0;
 		} SimpleL2Cache.init = 1;
 	}
 
-	Tag = address >> 14; // shift right 15 times to remove offset and index
-	index = address << 18; // shift left 18 times to remove offset
-	index = index >> 24; // shift right 24 times to remove offset
-	offset = address << 26; // shift left 26 times to remove index
-	offset = offset >> 26;  // shift right 26 times to remove index
+	Tag = address >> 14; // shift right 14 times to remove offset and index
+	index = address << 18; // shift left 18 times to remove tag
+	index = index >> 24; // shift right 24 times to remove offset and put all the index bits on the right
+	offset = address << 26; // shift left 26 times to remove index and tag
+	offset = offset >> 26;  // shift right 26 times to put all the offset bits on the right
 	MemAddress = address >> 6; // shift right 6 times to remove offset
 	MemAddress = MemAddress << 6; // address of the block in memory
+
 	CacheSet *Set = &SimpleL2Cache.sets[index]; // get the set
-	oldest = Set->oldest; 
+	oldest = Set->oldest;
 
 	/* access Cache*/
-	//
 	if ((!Set->blocks[0].Valid || Set->blocks[0].Tag != Tag) && (!Set->blocks[1].Valid || Set->blocks[1].Tag != Tag)){
 		accessDRAM(MemAddress, TempBlock, MODE_READ); // get new block from DRAM
 
@@ -131,6 +144,7 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode) {
 			accessDRAM(MemAddress, &(L2_Cache[(index + oldest) * BLOCK_SIZE]), MODE_WRITE); // then write back old block
 		}
 
+        // if the oldest block is the second one then we sum 1 to index to get the correct block
 		if (Set->oldest){
 			memcpy(&(L2_Cache[(index + 1) * BLOCK_SIZE]), TempBlock, BLOCK_SIZE); // copy new block to cache line
 			Set->oldest = 0; // set the oldest block to index 0
@@ -139,26 +153,26 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode) {
 			memcpy(&(L2_Cache[index * BLOCK_SIZE]), TempBlock, BLOCK_SIZE); // copy new block to cache line
 			Set->oldest = 1; // set the oldest block to index 1
 		}
-			
+
 			Set->blocks[oldest].Valid = 1;
 			Set->blocks[oldest].Tag = Tag;
 			Set->blocks[oldest].Dirty = 0;
 			Set->blocks[oldest].Index = index;
 	}
 
-	if (Set->oldest) aux = 0; else aux = 1;  
+	if (Set->oldest) aux = 0; else aux = 1;
 
 	if (mode == MODE_READ) {    // read data from cache line
 		memcpy(data, &(L2_Cache[(index + aux) * BLOCK_SIZE + offset]), WORD_SIZE);
 		time += L2_READ_TIME;
-	} 
+	}
 
 	if (mode == MODE_WRITE) { // write data from cache line
 			memcpy(&(L2_Cache[(index + aux)* BLOCK_SIZE + offset]), data, WORD_SIZE);
 			time += L2_WRITE_TIME;
 			Set->blocks[aux].Dirty = 1;
 	}
-	
+
 } // if miss, then replaced with the correct block
 
 void read(uint32_t address, uint8_t *data) {

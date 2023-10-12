@@ -1,7 +1,21 @@
-/*tag-18bits/index-8bits/offset-6bits*/
+// Computer organization course simple L1 Cache emulator
+
+/* Made by:
+ *
+ * João Rocha - ist103465
+ * João Fidalgo - ist103471
+ * José Lopes - ist103938
+ *
+ */
+
+/* Cache address organization
+ *
+ * tag-18bits/index-8bits/offset-6bits
+ *
+ */
+
 #include "L1Cache.h"
 #include "Cache.h"
-#include <strings.h>
 
 uint8_t L1Cache[L1_SIZE];
 uint8_t L2Cache[L2_SIZE];
@@ -67,7 +81,7 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
       MemAddress = MemAddress + Line->Index;
       accessDRAM(MemAddress, &(L1Cache[index * BLOCK_SIZE]), MODE_WRITE); // then write back old block
     }
-  
+
     memcpy(&(L1Cache[index * BLOCK_SIZE]), TempBlock,
            BLOCK_SIZE); // copy new block to cache line
     Line->Valid = 1;
@@ -75,6 +89,7 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
     Line->Dirty = 0;
     Line->Index = index;
   } // if miss, then replaced with the correct block
+
 
   if (mode == MODE_READ) {    // read data from cache line
     memcpy(data, &(L1Cache[index * BLOCK_SIZE + offset]), WORD_SIZE);
