@@ -48,11 +48,11 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
   }
 
   Tag = address >> 14; // shift right 14 times to remove offset and index
-  index = address << 18;
-  index = index >> 24;
-  offset = address << 26;
-  offset = offset >> 26;
-  MemAddress = address >> 6; // again this....!
+  index = address << 18; // shift left 18 times to remove offset
+  index = index >> 24; // shift right 24 times to remove offset
+  offset = address << 26; // shift left 26 times to remove index
+  offset = offset >> 26; // shift right 26 times to remove index
+  MemAddress = address >> 6; // address of the block in memory
   MemAddress = MemAddress << 6; // address of the block in memory
 
   CacheLine *Line = &L1Cache.lines[index]; //E preciso passar o index para decimal (esta em binario)
@@ -67,7 +67,7 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
       MemAddress = MemAddress + Line->Index;
       accessDRAM(MemAddress, &(L1Cache[index * BLOCK_SIZE]), MODE_WRITE); // then write back old block
     }
-
+  
     memcpy(&(L1Cache[index * BLOCK_SIZE]), TempBlock,
            BLOCK_SIZE); // copy new block to cache line
     Line->Valid = 1;

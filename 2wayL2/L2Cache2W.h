@@ -28,7 +28,7 @@ typedef struct CacheLine {
 } CacheLine;
 
 typedef struct CacheSet {
-  uint8_t oldest;
+  uint8_t oldest; // 0 or 1 to know which block is the oldest
   uint16_t Index;
   CacheLine blocks[2];
 } CacheSet;

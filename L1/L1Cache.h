@@ -29,7 +29,7 @@ typedef struct CacheLine {
 
 typedef struct Cache {
   uint32_t init;
-  CacheLine lines[256*sizeof(CacheLine)];
+  CacheLine lines[256*sizeof(CacheLine)]; // 256 lines of 32 bytes each
 } Cache;
 
 /*********************** Interfaces *************************/
