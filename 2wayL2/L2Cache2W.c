@@ -11,7 +11,7 @@
 /* Cache address organization
  *
  * L1  - tag-18bits/index-8bits/offset-6bits
- * L2  - tag-18bits/index-8bits/offset-4+2bits
+ * L2  - tag-18bits/index-8bits/offset-6bits
  *
  */
 
