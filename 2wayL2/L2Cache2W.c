@@ -54,8 +54,6 @@ void accessDRAM(uint32_t address, uint8_t *data, uint32_t mode) {
 }
 
 /*********************** L1 cache *************************/
-
-
 void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
 
 	uint32_t index, Tag, offset;
@@ -106,13 +104,10 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
 }
 
 /*********************** L2 cache *************************/
-
-void initL2Cache() { SimpleL2Cache.init = 0; }
-
 void accessL2(uint32_t address, uint8_t *data, uint32_t mode) {
 
 	uint32_t index, Tag, MemAddress, offset;
-	uint8_t TempBlock[BLOCK_SIZE], oldest, aux;
+	uint8_t TempBlock[BLOCK_SIZE], oldest;
 
 	/* init cache */
 	if (SimpleL2Cache.init == 0) {
@@ -133,45 +128,59 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode) {
 
 	CacheSet *Set = &SimpleL2Cache.sets[index]; // get the set
 	oldest = Set->oldest;
+/*--------------------------CASO DE HIT NUM BLOCO---------------------------*/
+  for(int i = 0; i < 2; i++){
+    if (Set->blocks[i].Valid && Set->blocks[i].Tag == Tag){
+      if (mode == MODE_READ) {    // read data from cache line
+        memcpy(data, &(L2_Cache[(index + i) * BLOCK_SIZE + offset]), WORD_SIZE);
+        time += L2_READ_TIME;
+        break;
+      } 
 
-	/* access Cache*/
-	if ((!Set->blocks[0].Valid || Set->blocks[0].Tag != Tag) && (!Set->blocks[1].Valid || Set->blocks[1].Tag != Tag)){
-		accessDRAM(MemAddress, TempBlock, MODE_READ); // get new block from DRAM
+      if (mode == MODE_WRITE) { // write data from cache line
+          memcpy(&(L2_Cache[(index + i)* BLOCK_SIZE + offset]), data, WORD_SIZE);
+          time += L2_WRITE_TIME;
+          Set->blocks[i].Dirty = 1;
+          break;
+      }
+    }
+  } 
+/*--------------------------------------------------------------------------*/
+  
 
-		if (Set->blocks[oldest].Valid && (Set->blocks[oldest].Dirty)) { // line has dirty block
-			MemAddress = Set->blocks[oldest].Tag << 14;
-			MemAddress = MemAddress + Set->blocks[oldest].Index;        // get address of the block in memory
-			accessDRAM(MemAddress, &(L2_Cache[(index + oldest) * BLOCK_SIZE]), MODE_WRITE); // then write back old block
-		}
+  /* access Cache*/
+  if ((!Set->blocks[0].Valid || Set->blocks[0].Tag != Tag) && (!Set->blocks[1].Valid || Set->blocks[1].Tag != Tag)){
+    accessDRAM(MemAddress, TempBlock, MODE_READ); // get new block from DRAM
 
-        // if the oldest block is the second one then we sum 1 to index to get the correct block
-		if (Set->oldest){
-			memcpy(&(L2_Cache[(index + 1) * BLOCK_SIZE]), TempBlock, BLOCK_SIZE); // copy new block to cache line
-			Set->oldest = 0; // set the oldest block to index 0
-		}
-		else {
-			memcpy(&(L2_Cache[index * BLOCK_SIZE]), TempBlock, BLOCK_SIZE); // copy new block to cache line
-			Set->oldest = 1; // set the oldest block to index 1
-		}
+    if (Set->blocks[oldest].Valid && (Set->blocks[oldest].Dirty)) { // line has dirty block
+      MemAddress = Set->blocks[oldest].Tag << 14;
+      MemAddress = MemAddress + Set->blocks[oldest].Index;        // get address of the block in memory
+      accessDRAM(MemAddress, &(L2_Cache[(index + oldest) * BLOCK_SIZE]), MODE_WRITE); // then write back old block
+    }
 
-			Set->blocks[oldest].Valid = 1;
-			Set->blocks[oldest].Tag = Tag;
-			Set->blocks[oldest].Dirty = 0;
-			Set->blocks[oldest].Index = index;
-	}
+    if (Set->oldest) memcpy(&(L2_Cache[(index + 1) * BLOCK_SIZE]), TempBlock, BLOCK_SIZE); // copy new block to cache line
+    
+    else memcpy(&(L2_Cache[index * BLOCK_SIZE]), TempBlock, BLOCK_SIZE); // copy new block to cache line
+      
+      Set->blocks[oldest].Valid = 1;
+      Set->blocks[oldest].Tag = Tag;
+      Set->blocks[oldest].Dirty = 0;
+      Set->blocks[oldest].Index = index;
 
-	if (Set->oldest) aux = 0; else aux = 1;
 
-	if (mode == MODE_READ) {    // read data from cache line
-		memcpy(data, &(L2_Cache[(index + aux) * BLOCK_SIZE + offset]), WORD_SIZE);
-		time += L2_READ_TIME;
-	}
+    if (mode == MODE_READ) {    // read data from cache line
+      memcpy(data, &(L2_Cache[(index + oldest) * BLOCK_SIZE + offset]), WORD_SIZE);
+      time += L2_READ_TIME;
+    } 
 
-	if (mode == MODE_WRITE) { // write data from cache line
-			memcpy(&(L2_Cache[(index + aux)* BLOCK_SIZE + offset]), data, WORD_SIZE);
-			time += L2_WRITE_TIME;
-			Set->blocks[aux].Dirty = 1;
-	}
+    if (mode == MODE_WRITE) { // write data from cache line
+        memcpy(&(L2_Cache[(index + oldest)* BLOCK_SIZE + offset]), data, WORD_SIZE);
+        time += L2_WRITE_TIME;
+        Set->blocks[oldest].Dirty = 1;
+    }
+
+    if (Set->oldest) Set->oldest = 0; else Set->oldest = 1;  
+  }
 
 } // if miss, then replaced with the correct block
 
